@@ -17,7 +17,7 @@ export default class extends React.Component {
         return (
             <Page id="Page-Home">
                 <Navbar>
-                    <NavTitle>Risk Report Generator</NavTitle>
+                    <NavTitle>Ds đi trễ</NavTitle>
                 </Navbar>
 
                 <Block strong>
@@ -26,13 +26,13 @@ export default class extends React.Component {
                         <input type="file" id="fileInput" accept=".csv" onChange={this.fileOnChange.bind(this)} />
                     </label>
                     {this.renderFileInfo()}
+                    { 
+                        this.state.jsonIput ? <Button fill onClick={this.onCopy.bind(this)}>Download CSV</Button> : null
+                    }
                 </Block>
-                <Block strong>
-                    <Button fill onClick={this.onCopy.bind(this)}>
-                        Download CSV
-                    </Button>
+                <Block id="items">
+                    {this.renderReportExport()}
                 </Block>
-                <Block id="items">{this.renderReportExport()}</Block>
             </Page>
         );
     }
@@ -209,22 +209,7 @@ export default class extends React.Component {
         data = this.state.jsonIput || [];
         data = this.filterData(data);
         console.log({ data });
-        // return null;
-        // Class: "Visitor"
-        // Date: "2019-02-11"
-        // Employee ID: ""
-        // External Device: ""
-        // Mode: "Out"
-        // Name: ""
-        // "Pass Count
-        // ": "0
-        // "
-        // Property: "1000"
-        // Result: "Capture Failed"
-        // Terminal ID: "0001 : Main Door"
-        // Time: "07:44:03"
-        // Type: "1:N"
-        // User ID: "****"
+        
         const dataFull = [];
         let theadArr = null;
         let bodyArr = [];
@@ -243,10 +228,12 @@ export default class extends React.Component {
         console.log({ dataFull });
 
         return (
-            <table>
-                <thead>{theadArr}</thead>
-                <tbody>{bodyArr}</tbody>
-            </table>
+            <div class="data-table card">
+                <table>
+                    <thead>{theadArr}</thead>
+                    <tbody>{bodyArr}</tbody>
+                </table>
+            </div>
         );
     }
     
