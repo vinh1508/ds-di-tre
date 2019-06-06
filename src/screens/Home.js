@@ -1,7 +1,6 @@
 import React from 'react';
 import { Block, BlockTitle, Navbar, NavTitle, Page, Button } from 'framework7-react';
 import API from '../services/API';
-import ReportExport from '../components/ReportExport';
 import DataTransfer from '../services/DataTransfer';
 import moment from 'moment';
 import './Home.scss';
