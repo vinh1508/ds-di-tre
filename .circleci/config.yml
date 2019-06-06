@@ -1,0 +1,101 @@
+defaults: &defaults
+  docker:
+    - image: circleci/node:10
+
+version: 2
+jobs:
+  build_and_deploy:
+    <<: *defaults
+    steps:
+      - checkout
+      - run: 
+          name: NodeJS Info
+          command: |
+              node -v
+              npm -v
+              yarn -v
+      - restore_cache:
+          key: yarn-v1-{{ checksum "yarn.lock" }}-{{ arch }}
+
+      - restore_cache:
+          key: node-v1-{{ checksum "package.json" }}-{{ arch }}
+
+      - run: yarn install
+
+      - save_cache:
+          key: yarn-v1-{{ checksum "yarn.lock" }}-{{ arch }}
+          paths:
+            - ~/.cache/yarn
+
+      - save_cache:
+          key: node-v1-{{ checksum "package.json" }}-{{ arch }}
+          paths:
+            - node_modules
+            
+      - run: 
+          name: Setup Envirorment
+          command: |
+            if [ $CIRCLE_BRANCH = 'develop' ]; then
+              cp env/.env.development .env
+              cp deploy/dev-deploy.sh deploy/deploy.sh
+
+            elif [ $CIRCLE_BRANCH = 'staging' ]; then
+              cp env/.env.staging .env
+              cp deploy/stg-deploy.sh deploy/deploy.sh
+
+            elif [ $CIRCLE_BRANCH = 'production' ]; then
+              cp env/.env.production .env
+              cp deploy/prd-deploy.sh deploy/deploy.sh
+
+            fi
+
+            printf "\nREACT_APP_CIRCLE_BUILD_NUM=$CIRCLE_BUILD_NUM" >> .env
+            cat .env
+      - run: 
+          name: Build
+          command: yarn build
+      - run:
+          name: Share built files to workspace
+          command: |
+            ls
+            mkdir -p workspace/build
+            mkdir -p workspace/build_static
+            mkdir -p workspace/deploy
+
+            cp build/*.* workspace/build
+            cp -r build/static/* workspace/build_static
+            cp deploy/deploy.sh workspace/deploy
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - build
+            - build_static
+            - deploy
+      - run:
+          name: Install packages
+          command: |
+            sudo apt-get update -y
+            sudo apt-get install -y awscli
+      - run:
+          name: Configure AWS credentials
+          command: |
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set region $AWS_ECS_REGION
+      - attach_workspace:
+          at: workspace
+      - run:
+          name: Begin deploy to AWS
+          command: sh workspace/deploy/deploy.sh
+
+workflows:
+  version: 2
+  btd:
+    jobs:
+      - build_and_deploy:
+          filters:
+            branches:
+              only:
+                - develop
+                - staging
+                - production

@@ -1,0 +1,27 @@
+#Page-Home {
+    .page-content {
+        // overflow: hidden;
+    }
+
+    #lblChooseFile {
+        padding: 5px;
+        border: solid 1px #ccc;
+        text-align: center;
+        cursor: pointer;
+        display: block;
+        margin-bottom: 10px;
+    }
+
+    #fileInput {
+        display: none;
+    }
+
+    #file-info {
+        padding: 5px;
+        margin-top: -10px;
+        text-align: center;
+        .file-name {
+            font-style: italic;
+        }
+    }
+}
