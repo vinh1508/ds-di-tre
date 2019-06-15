@@ -24,4 +24,11 @@
             font-style: italic;
         }
     }
+    #list-item{
+        .data-table{
+            max-height: 400px;
+            overflow: auto;
+
+        }
+    }
 }

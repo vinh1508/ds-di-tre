@@ -1,18 +1,22 @@
 import React from 'react';
-import { Block, BlockTitle, Navbar, NavTitle, Page, Button } from 'framework7-react';
+import { Block, BlockTitle, Navbar, NavTitle, Page, Button, Row, Col } from 'framework7-react';
 import API from '../services/API';
 import DataTransfer from '../services/DataTransfer';
 import moment from 'moment';
 import './Home.scss';
 
+const LATE_ON_TIME = '09:00:00';
 export default class extends React.Component {
+    fileSelected = null;
+    dataTopDiTre = {};
+    dataDsDiTre = [];
+
     state = {
         fileSelected: null,
         jsonIput: null,
         enableExport: false
     };
-    fileSelected = null;
-    
+
     render() {
         return (
             <Page id="Page-Home">
@@ -21,22 +25,32 @@ export default class extends React.Component {
                 </Navbar>
 
                 <Block strong>
-                    <label id="lblChooseFile">
-                        Choose a json file ...
-                        <input type="file" id="fileInput" accept=".csv" onChange={this.fileOnChange.bind(this)} />
-                    </label>
-                    {this.renderFileInfo()}
-                    { 
-                        this.state.jsonIput ? <Button fill onClick={this.onCopy.bind(this)}>Download CSV</Button> : null
-                    }
+                    <Row>
+                        <Col>
+                            <label id="lblChooseFile">
+                                Choose a json file ...
+                                <input
+                                    type="file"
+                                    id="fileInput"
+                                    accept=".csv"
+                                    onChange={this.fileOnChange.bind(this)}
+                                />
+                            </label>
+                            {this.renderFileInfo()}
+                            {this.state.jsonIput ? (
+                                <Button fill onClick={this.onCopy.bind(this)}>
+                                    Download CSV
+                                </Button>
+                            ) : null}
+                        </Col>
+                        <Col />
+                    </Row>
                 </Block>
-                <Block id="items">
-                    {this.renderReportExport()}
-                </Block>
+                <Block id="list-item">{this.renderDSDiTre()}</Block>
             </Page>
         );
     }
-    
+
     csvJSON(csv) {
         var lines = csv.split('\n');
 
@@ -116,19 +130,6 @@ export default class extends React.Component {
         }
     }
 
-    export() {}
-
-    reportOnCompleted(data) {
-        console.log('reportOnCompleted::::', data);
-        const svg_content = data.svg;
-        const file = new Blob([svg_content], { type: 'image/svg+xml' });
-        const formData = new FormData();
-        formData.append('svg-file', file, 'fileName.svg');
-        formData.append('description', 'description report');
-        API.report(formData).then((res) => {
-            console.log('res', res);
-        });
-    }
     renderFileInfo() {
         if (!this.state.enableExport) return null;
         return (
@@ -138,53 +139,87 @@ export default class extends React.Component {
         );
     }
 
-    renderThs(item, index) {
+    renderThs(item, index, keyPrefix = '') {
         let ths = [];
         Object.keys(item).forEach((key, i) => {
-            ths.push(<th key={`item-th-${index}-${i}`}>{key}</th>);
+            ths.push(<th key={`${keyPrefix}item-th-${index}-${i}`}>{key}</th>);
         });
         return ths;
     }
 
-    renderTds(item, index) {
+    renderTds(item, index, keyPrefix = '') {
         let tds = [];
         Object.keys(item).forEach((key, i) => {
-            tds.push(<td key={`item-td-${index}-${i}`}>{item[key]}</td>);
+            tds.push(<td key={`${keyPrefix}item-td-${index}-${i}`}>{item[key]}</td>);
         });
         return tds;
     }
+
+    addToObject(obj, { key, value }, index) {
+        // Create a temp object and index variable
+        let temp = {};
+        let i = 0;
+
+        // Loop through the original object
+        for (let prop in obj) {
+            if (obj.hasOwnProperty(prop)) {
+                // If the indexes match, add the new item
+                if (i === index && key && value) {
+                    temp[key] = value;
+                }
+
+                // Add the current item in the loop to the temp obj
+                temp[prop] = obj[prop];
+
+                // Increase the count
+                i++;
+            }
+        }
+
+        // If no index, add to the end
+        if (!index && key && value) {
+            temp[key] = value;
+        }
+
+        return temp;
+    }
+
+    groupDataByKey(data = [], key = '') {}
+
     filterData(data) {
-        const onTime = moment('09:00:00', 'HH:mm:ss');
+        const mmLateOnTime = moment(LATE_ON_TIME, 'HH:mm:ss');
         let dataByDate = {};
         data.forEach((item, index) => {
-            if (item['Date']) {
-                if (!dataByDate[item['Date']]) {
-                    dataByDate[item['Date']] = [];
+            let keyDate = item['Date'];
+            if (keyDate) {
+                if (!dataByDate[keyDate]) {
+                    dataByDate[keyDate] = [];
                 }
-                dataByDate[item['Date']].push(item);
+                dataByDate[keyDate].push(item);
             }
         });
         let dataByDateByUser = {};
-        Object.keys(dataByDate).forEach((date, index) => {
-            const items = dataByDate[date];
-            if (!dataByDateByUser[date]) {
-                dataByDateByUser[date] = {};
+        Object.keys(dataByDate).forEach((keyDate, index) => {
+            const items = dataByDate[keyDate];
+            if (!dataByDateByUser[keyDate]) {
+                dataByDateByUser[keyDate] = {};
             }
             items.forEach((item) => {
                 let userId = item['User ID'];
-                if (!dataByDateByUser[date][userId]) {
-                    dataByDateByUser[date][userId] = [];
+                if (!dataByDateByUser[keyDate][userId]) {
+                    dataByDateByUser[keyDate][userId] = [];
                 }
-                dataByDateByUser[date][userId].push(item);
+                dataByDateByUser[keyDate][userId].push(item);
             });
         });
-        let dataByDateByUserFirstCheck = {};
+        let dataDsDiTreByDate = {};
+        let dataDsDiTreByUser = {};
         console.log({ dataByDateByUser });
-        Object.keys(dataByDateByUser).forEach((date, index) => {
-            const dateItems = dataByDateByUser[date];
+        Object.keys(dataByDateByUser).forEach((keyDate, index) => {
+            const dateItems = dataByDateByUser[keyDate];
 
-            if (!dataByDateByUserFirstCheck[date]) {
-                dataByDateByUserFirstCheck[date] = [];
+            if (!dataDsDiTreByDate[keyDate]) {
+                dataDsDiTreByDate[keyDate] = [];
             }
             console.log({ dateItems });
             Object.keys(dateItems).forEach((uid, uindex) => {
@@ -193,50 +228,94 @@ export default class extends React.Component {
                 const firstItem = userItems[0];
 
                 if (firstItem) {
-                    let firstTime = firstItem['Time'];
-                    let time = moment(firstTime, 'HH:mm:ss');
-                    if (onTime.diff(time) <= 0) {
-                        dataByDateByUserFirstCheck[date].push(firstItem);
+                    let time = moment(firstItem['Time'], 'HH:mm:ss');
+                    const mmDate = moment(keyDate);
+                    const dayOfWeekIso = mmDate.format('E');
+                    // skip saturday and sunday
+                    if (!['6', '7'].includes(dayOfWeekIso)) {
+                        if (mmLateOnTime.diff(time) <= 0) {
+                            const newItem = this.addToObject(
+                                firstItem,
+                                {
+                                    key: 'day',
+                                    value: mmDate.format('dddd')
+                                },
+                                2
+                            );
+                            dataDsDiTreByDate[keyDate].push(newItem);
+                            if (!dataDsDiTreByUser[uid]) {
+                                dataDsDiTreByUser[uid] = [];
+                            }
+                            dataDsDiTreByUser[uid].push(newItem);
+                        }
                     }
                 }
             });
         });
-        return dataByDateByUserFirstCheck;
+        return { dataDsDiTreByDate, dataDsDiTreByUser };
     }
-    renderReportExport() {
+
+    renderDSDiTre() {
         let data = [];
         if (!this.state.jsonIput) return null;
         data = this.state.jsonIput || [];
-        data = this.filterData(data);
-        console.log({ data });
-        
+        const { dataDsDiTreByDate, dataDsDiTreByUser } = this.filterData(data);
+        console.log({ dataDsDiTreByDate, dataDsDiTreByUser });
+        data = dataDsDiTreByDate;
         const dataFull = [];
         let theadArr = null;
         let bodyArr = [];
         Object.keys(data).forEach((date, i) => {
             const items = data[date];
             if (i === 0) {
-                theadArr = <tr key={`item-thead-${date}-${i}`}>{this.renderThs(items[0], i)}</tr>;
+                theadArr = <tr key={`item-thead-${date}-${i}`}>{this.renderThs(items[0], i, 'tables-2')}</tr>;
             }
             items.forEach((item, index) => {
                 dataFull.push(item);
-                let tr = <tr key={`item-${date}-${index}`}>{this.renderTds(item, index)}</tr>;
+                let tr = <tr key={`item-${date}-${index}`}>{this.renderTds(item, index, 'tables-2')}</tr>;
                 bodyArr.push(tr);
             });
         });
-        this.dataFiltered = dataFull;
+        this.dataDsDiTre = dataFull;
         console.log({ dataFull });
-
+        let theadArr2 = null,
+            bodyArr2 = [];
+        Object.keys(dataDsDiTreByUser).forEach((userId, index) => {
+            const items = dataDsDiTreByUser[userId];
+            const newItem = {
+                'User ID': userId,
+                name: items[0]['Name'],
+                total: items.length,
+                date: items.map((it) => `${it.Date} ${it.Time}`).join('; ')
+            };
+            if (!theadArr2) {
+                theadArr2 = <tr key={`table2-item-thead-${userId}-${index}`}>{this.renderThs(newItem, index)}</tr>;
+            }
+            let tds = this.renderTds(newItem, index, 'table2-');
+            const tr = <tr key={`tbody-2-tr-${index}`}>{tds}</tr>;
+            bodyArr2.push(tr);
+        });
         return (
-            <div class="data-table card">
-                <table>
-                    <thead>{theadArr}</thead>
-                    <tbody>{bodyArr}</tbody>
-                </table>
-            </div>
+            <Row>
+                <Col>
+                    <div className="data-table card">
+                        <table>
+                            <thead>{theadArr}</thead>
+                            <tbody>{bodyArr}</tbody>
+                        </table>
+                    </div>
+                </Col>
+                <Col>
+                    <div className="data-table card">
+                        <table>
+                            <thead>{theadArr2}</thead>
+                            <tbody>{bodyArr2}</tbody>
+                        </table>
+                    </div>
+                </Col>
+            </Row>
         );
     }
-    
 
     convertToCSV(objArray) {
         var array = typeof objArray != 'object' ? JSON.parse(objArray) : objArray;
@@ -255,6 +334,7 @@ export default class extends React.Component {
 
         return str;
     }
+
     exportCSVFile(items, fileTitle) {
         var headers = {};
         Object.keys(items[0]).forEach((key) => {
@@ -281,7 +361,8 @@ export default class extends React.Component {
         link.click();
         document.body.removeChild(link);
     }
+
     onCopy() {
-        this.exportCSVFile(this.dataFiltered, this.fileName);
+        this.exportCSVFile(this.dataDsDiTre, this.fileName);
     }
 }
