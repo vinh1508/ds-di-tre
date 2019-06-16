@@ -3,6 +3,8 @@ import { Block, BlockTitle, Navbar, NavTitle, Page, Button, Row, Col } from 'fra
 import API from '../services/API';
 import DataTransfer from '../services/DataTransfer';
 import moment from 'moment';
+import { orderBy } from 'lodash';
+import { saveAs } from 'file-saver';
 import './Home.scss';
 
 const LATE_ON_TIME = '09:00:00';
@@ -142,7 +144,7 @@ export default class extends React.Component {
     renderThs(item, index, keyPrefix = '') {
         let ths = [];
         Object.keys(item).forEach((key, i) => {
-            ths.push(<th key={`${keyPrefix}item-th-${index}-${i}`}>{key}</th>);
+            ths.push(<th key={`${keyPrefix}item-th-${index}-${i}`} className={`item-${i} item-th-${i}`}><span>{key}</span></th>);
         });
         return ths;
     }
@@ -150,7 +152,7 @@ export default class extends React.Component {
     renderTds(item, index, keyPrefix = '') {
         let tds = [];
         Object.keys(item).forEach((key, i) => {
-            tds.push(<td key={`${keyPrefix}item-td-${index}-${i}`}>{item[key]}</td>);
+            tds.push(<td key={`${keyPrefix}item-td-${index}-${i}`} className={`item-${i} item-td-${i}`}><span>{item[key]}</span></td>);
         });
         return tds;
     }
@@ -221,7 +223,6 @@ export default class extends React.Component {
             if (!dataDsDiTreByDate[keyDate]) {
                 dataDsDiTreByDate[keyDate] = [];
             }
-            console.log({ dateItems });
             Object.keys(dateItems).forEach((uid, uindex) => {
                 const userItems = dateItems[uid] || [];
 
@@ -230,6 +231,7 @@ export default class extends React.Component {
                 if (firstItem) {
                     let time = moment(firstItem['Time'], 'HH:mm:ss');
                     const mmDate = moment(keyDate);
+                    const ym = mmDate.format('YYYY-MM');
                     const dayOfWeekIso = mmDate.format('E');
                     // skip saturday and sunday
                     if (!['6', '7'].includes(dayOfWeekIso)) {
@@ -243,10 +245,22 @@ export default class extends React.Component {
                                 2
                             );
                             dataDsDiTreByDate[keyDate].push(newItem);
-                            if (!dataDsDiTreByUser[uid]) {
-                                dataDsDiTreByUser[uid] = [];
+                            if (!dataDsDiTreByUser[ym]) {
+                                dataDsDiTreByUser[ym] = {};
                             }
-                            dataDsDiTreByUser[uid].push(newItem);
+                            
+                            if (dataDsDiTreByUser[ym][uid]) {
+                                dataDsDiTreByUser[ym][uid]['total'] = dataDsDiTreByUser[ym][uid]['total'] + 1;
+                                dataDsDiTreByUser[ym][uid]['date'].push(firstItem['Date']);
+                            } else {
+                                const newItem2 = {
+                                    'User ID': firstItem['User ID'],
+                                    name: firstItem['Name'],
+                                    total: 1,
+                                    date: [firstItem['Date']]
+                                };
+                                dataDsDiTreByUser[ym][uid] = newItem2;
+                            }
                         }
                     }
                 }
@@ -279,27 +293,28 @@ export default class extends React.Component {
         this.dataDsDiTre = dataFull;
         console.log({ dataFull });
         let theadArr2 = null,
-            bodyArr2 = [];
-        Object.keys(dataDsDiTreByUser).forEach((userId, index) => {
-            const items = dataDsDiTreByUser[userId];
-            const newItem = {
-                'User ID': userId,
-                name: items[0]['Name'],
-                total: items.length,
-                date: items.map((it) => `${it.Date} ${it.Time}`).join('; ')
-            };
-            if (!theadArr2) {
-                theadArr2 = <tr key={`table2-item-thead-${userId}-${index}`}>{this.renderThs(newItem, index)}</tr>;
-            }
-            let tds = this.renderTds(newItem, index, 'table2-');
-            const tr = <tr key={`tbody-2-tr-${index}`}>{tds}</tr>;
-            bodyArr2.push(tr);
+            bodyArr2 = [], dataTopDiTre = [];
+        Object.keys(dataDsDiTreByUser).forEach((ym, index) => {
+            const users = orderBy(dataDsDiTreByUser[ym],'total','desc');
+            Object.keys(users).forEach((userId, index) => {
+                const userData = users[userId];
+                userData.date = userData.date.join(';');
+                if (!theadArr2) {
+                    theadArr2 = <tr key={`table2-item-thead-${userId}-${index}`}>{this.renderThs(userData, index)}</tr>;
+                }
+                let tds = this.renderTds(userData, index, 'table2-');
+                const tr = <tr key={`tbody-2-tr-${index}`}>{tds}</tr>;
+                bodyArr2.push(tr);
+                dataTopDiTre.push(userData);
+            });
         });
+        this.dataTopDiTre = dataTopDiTre;
+
         return (
             <Row>
                 <Col>
                     <div className="data-table card">
-                        <table>
+                        <table className="table1">
                             <thead>{theadArr}</thead>
                             <tbody>{bodyArr}</tbody>
                         </table>
@@ -307,7 +322,7 @@ export default class extends React.Component {
                 </Col>
                 <Col>
                     <div className="data-table card">
-                        <table>
+                        <table  className="table2">
                             <thead>{theadArr2}</thead>
                             <tbody>{bodyArr2}</tbody>
                         </table>
@@ -346,20 +361,11 @@ export default class extends React.Component {
 
         var csv = this.convertToCSV(jsonObject);
 
-        var exportedFilenmae = fileTitle + '_download.csv' || 'export.csv';
+        var exportedFileName = fileTitle + '_download.csv' || 'export.csv';
 
         var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-
-        var link = document.createElement('a');
-        console.log('link.download', link.download);
-        var url = URL.createObjectURL(blob);
-        link.className = 'external';
-        link.setAttribute('href', url);
-        link.setAttribute('download', exportedFilenmae);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        saveAs(blob,exportedFileName);
+        
     }
 
     onCopy() {
