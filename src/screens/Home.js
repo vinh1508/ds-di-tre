@@ -370,5 +370,6 @@ export default class extends React.Component {
 
     onCopy() {
         this.exportCSVFile(this.dataDsDiTre, this.fileName);
+        this.exportCSVFile(this.dataTopDiTre, this.fileName);
     }
 }
