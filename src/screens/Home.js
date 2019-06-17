@@ -144,7 +144,11 @@ export default class extends React.Component {
     renderThs(item, index, keyPrefix = '') {
         let ths = [];
         Object.keys(item).forEach((key, i) => {
-            ths.push(<th key={`${keyPrefix}item-th-${index}-${i}`} className={`item-${i} item-th-${i}`}><span>{key}</span></th>);
+            ths.push(
+                <th key={`${keyPrefix}item-th-${index}-${i}`} className={`item-${i} item-th-${i}`}>
+                    <span>{key}</span>
+                </th>
+            );
         });
         return ths;
     }
@@ -152,7 +156,11 @@ export default class extends React.Component {
     renderTds(item, index, keyPrefix = '') {
         let tds = [];
         Object.keys(item).forEach((key, i) => {
-            tds.push(<td key={`${keyPrefix}item-td-${index}-${i}`} className={`item-${i} item-td-${i}`}><span>{item[key]}</span></td>);
+            tds.push(
+                <td key={`${keyPrefix}item-td-${index}-${i}`} className={`item-${i} item-td-${i}`}>
+                    <span>{item[key]}</span>
+                </td>
+            );
         });
         return tds;
     }
@@ -248,7 +256,7 @@ export default class extends React.Component {
                             if (!dataDsDiTreByUser[ym]) {
                                 dataDsDiTreByUser[ym] = {};
                             }
-                            
+
                             if (dataDsDiTreByUser[ym][uid]) {
                                 dataDsDiTreByUser[ym][uid]['total'] = dataDsDiTreByUser[ym][uid]['total'] + 1;
                                 dataDsDiTreByUser[ym][uid]['date'].push(firstItem['Date']);
@@ -293,9 +301,10 @@ export default class extends React.Component {
         this.dataDsDiTre = dataFull;
         console.log({ dataFull });
         let theadArr2 = null,
-            bodyArr2 = [], dataTopDiTre = [];
+            bodyArr2 = [],
+            dataTopDiTre = [];
         Object.keys(dataDsDiTreByUser).forEach((ym, index) => {
-            const users = orderBy(dataDsDiTreByUser[ym],'total','desc');
+            const users = orderBy(dataDsDiTreByUser[ym], 'total', 'desc');
             Object.keys(users).forEach((userId, index) => {
                 const userData = users[userId];
                 userData.date = userData.date.join(';');
@@ -322,7 +331,7 @@ export default class extends React.Component {
                 </Col>
                 <Col>
                     <div className="data-table card">
-                        <table  className="table2">
+                        <table className="table2">
                             <thead>{theadArr2}</thead>
                             <tbody>{bodyArr2}</tbody>
                         </table>
@@ -364,12 +373,14 @@ export default class extends React.Component {
         var exportedFileName = fileTitle + '_download.csv' || 'export.csv';
 
         var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        saveAs(blob,exportedFileName);
-        
+        saveAs(blob, exportedFileName);
     }
 
     onCopy() {
-        this.exportCSVFile(this.dataDsDiTre, this.fileName);
-        this.exportCSVFile(this.dataTopDiTre, this.fileName);
+        let arr = this.fileName.split('.');
+        arr.pop();
+        let fileName = arr.join('');
+        this.exportCSVFile(this.dataDsDiTre, fileName + '_list');
+        this.exportCSVFile(this.dataTopDiTre, fileName + '_top');
     }
 }
