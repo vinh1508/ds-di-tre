@@ -117,7 +117,7 @@ export default class extends React.Component {
                 const jsonIput = JSON.parse(content);
                 this.jsonIput = jsonIput;
                 this.enableExport = true;
-
+                
                 console.log({ jsonIput });
                 this.setState({
                     enableExport: true,
@@ -143,7 +143,7 @@ export default class extends React.Component {
 
     renderThs(item, index, keyPrefix = '') {
         let ths = [];
-        Object.keys(item).forEach((key, i) => {
+        Object.keys(item||{}).forEach((key, i) => {
             ths.push(
                 <th key={`${keyPrefix}item-th-${index}-${i}`} className={`item-${i} item-th-${i}`}>
                     <span>{key}</span>
@@ -289,7 +289,7 @@ export default class extends React.Component {
         let bodyArr = [];
         Object.keys(data).forEach((date, i) => {
             const items = data[date];
-            if (i === 0) {
+            if (!theadArr && items[0]) {
                 theadArr = <tr key={`item-thead-${date}-${i}`}>{this.renderThs(items[0], i, 'tables-2')}</tr>;
             }
             items.forEach((item, index) => {
@@ -307,14 +307,16 @@ export default class extends React.Component {
             const users = orderBy(dataDsDiTreByUser[ym], 'total', 'desc');
             Object.keys(users).forEach((userId, index) => {
                 const userData = users[userId];
-                userData.date = userData.date.join(';');
-                if (!theadArr2) {
-                    theadArr2 = <tr key={`table2-item-thead-${userId}-${index}`}>{this.renderThs(userData, index)}</tr>;
+                if(userData){
+                    userData.date = userData.date.join(';');
+                    if (!theadArr2) {
+                        theadArr2 = <tr key={`table2-item-thead-${userId}-${index}`}>{this.renderThs(userData, index)}</tr>;
+                    }
+                    let tds = this.renderTds(userData, index, 'table2-');
+                    const tr = <tr key={`tbody-2-tr-${index}`}>{tds}</tr>;
+                    bodyArr2.push(tr);
+                    dataTopDiTre.push(userData);
                 }
-                let tds = this.renderTds(userData, index, 'table2-');
-                const tr = <tr key={`tbody-2-tr-${index}`}>{tds}</tr>;
-                bodyArr2.push(tr);
-                dataTopDiTre.push(userData);
             });
         });
         this.dataTopDiTre = dataTopDiTre;
